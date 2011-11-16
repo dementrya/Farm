@@ -21,16 +21,7 @@ class PlantsController < ApplicationController
     end
   end
 
-  # GET /plants/new
-  # GET /plants/new.xml
-  def new
-    @plant = Plant.new
 
-    respond_to do |format|
-      format.html # new.html.erb
-      format.xml { render xml: @plant }
-    end
-  end
 
   # GET /plants/1/edit
   def edit

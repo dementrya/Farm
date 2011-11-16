@@ -19,7 +19,7 @@ class HomeController < ApplicationController
 
     @already=false
   
-    if @params=="plant"
+    if @params=="seed"
       @plant.each do |plant|
         if @x.to_s==plant.x.to_s
           if @y.to_s==plant.x.to_s
@@ -28,8 +28,8 @@ class HomeController < ApplicationController
         end
       end 
       if @already==false
-        seed=plant.new()
-        seedplant_type=@plant_type
+        seed=Plant.new
+        seed.plant_type=@plant_type
         seed.x=@x
         seed.y=@y
         seed.process_end=49000000
