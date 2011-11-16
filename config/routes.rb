@@ -1,7 +1,9 @@
 Proj::Application.routes.draw do
+  resources :plants
+
   get "home/index"
 
-  resources :Plant
+  
 
   # The priority is based upon order of creation:
   # first created -> highest priority.

@@ -3,7 +3,7 @@ class HomeController < ApplicationController
     @params=params[:id]
     @x=params[:x]
     @y=params[:y]
-    @pl_type=params[:pl_type]
+    @plant_type=params[:plant_type]
   
     @plant = Plant.find(:all)
   
@@ -29,7 +29,7 @@ class HomeController < ApplicationController
       end 
       if @already==false
         seed=plant.new()
-        seed.pl_type=@pl_type
+        seedplant_type=@plant_type
         seed.x=@x
         seed.y=@y
         seed.process_end=49000000

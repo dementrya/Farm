@@ -1,0 +1,30 @@
+<p id="notice"><%= notice %></p>
+
+<p>
+  <b>Plant type:</b>
+  <%= @plant.plant_type %>
+</p>
+
+<p>
+  <b>Id:</b>
+  <%= @plant.id %>
+</p>
+
+<p>
+  <b>X:</b>
+  <%= @plant.x %>
+</p>
+
+<p>
+  <b>Y:</b>
+  <%= @plant.y %>
+</p>
+
+<p>
+  <b>Process end:</b>
+  <%= @plant.process_end %>
+</p>
+
+
+<%= link_to 'Edit', edit_plant_path(@plant) %> |
+<%= link_to 'Back', plants_path %>

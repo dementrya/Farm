@@ -2,7 +2,7 @@
 <field zero_x="0" zero_y="0" size_x="10" size_y="10">
 
 
-<% for plant in @Plant -%><<%=plant.pl_type %> id="<%=plant.id%>" x="<%=plant.x%>" y="<%=plant.y%>" process_end="<%=plant.process_end%>"/>
+<% for pl in @plant -%><<%=pl.plant_type %> id="<%=pl.id%>" x="<%=pl.x%>" y="<%=pl.y%>" process_end="<%=pl.process_end%>"/>
 <%  end %>
 
 </field>

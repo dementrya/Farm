@@ -11,10 +11,10 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20111114125434) do
+ActiveRecord::Schema.define(:version => 20111116054902) do
 
-  create_table "Plant", :force => true do |t|
-    t.string   "pl_type"
+  create_table "plants", :force => true do |t|
+    t.string   "plant_type"
     t.integer  "x"
     t.integer  "y"
     t.integer  "process_end"
