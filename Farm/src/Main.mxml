@@ -88,10 +88,13 @@
 	public var potato_button:com.ImageCached;
 	public var sunflower_button:com.ImageCached;
 	public var clover_button:com.ImageCached;
+	public var statLabel:Label;
 	public var imgArr:Array;
 	public var digMode:Boolean;			   //индикатор режима сбора урожая
 	public var dragType:String;
 	public var dragMode:Boolean;
+	public var xml:XML;
+	public var stream:URLStream;
 	
 	
 	public const STEP_TIME:int = 10000000;
@@ -99,7 +102,7 @@
 	public const Y0 :int= 358;
 	public const H_X:int = 57;				//велечины для перевода экранных координат в координаты поля
 	public const H_Y:int = 30;
-	
+	public const URL:String = "http://localhost:3000";
 	
 		
 		public function initButtons():void
@@ -149,7 +152,16 @@
 			dig_button.x = 45;
 			dig_button.y = 330;
 			board.addChild(dig_button);
-			dig_button.addEventListener(MouseEvent.CLICK, startDig)
+			dig_button.addEventListener(MouseEvent.CLICK, startDig);
+			
+			statLabel = new Label();
+			statLabel.text = "Связь с сервером...";
+			statLabel.x = 45;
+			statLabel.y = 380;
+			//statLabel.visible = false;
+			board.addChild(statLabel);
+			
+			
 			
 		}
 		
@@ -163,12 +175,13 @@
 			if (!digMode) return;
 			digMode = false;
 			var coord:Object = screenCoordToFieldCoord(mouseX, mouseY);
-			var ind:int = findPlant(coord.x, coord.y);
+			sendQuery(URL + "/?id=grab&x=" + coord.x + "&y=" + coord.y);
+			/*var ind:int = findPlant(coord.x, coord.y);
 			if (ind == -1) return;
 			if (plants[ind].state != 5) return;
 			imgArr[ind].visible = false;
 			imgArr.splice(ind, 1);
-			plants.splice(ind, 1);
+			plants.splice(ind, 1);*/
 			
 			
 		}
@@ -183,15 +196,16 @@
 		
 		public function makeTurn(e:MouseEvent):void
 		{
-			for each (var pole : Plant in plants)
+			/*for each (var pole : Plant in plants)
 			{
 				pole.process_end -= STEP_TIME;
 				pole.calcPlantState(pole.process_end);
 			}
 			
 			if (imgArr != null) cleanImgArr();
-			imgArr = new Array();
-			refreshField();
+			imgArr = new Array();*/
+			sendQuery(URL + "/?id=make_turn");
+			//refreshField();
 		}		
 		
 		
@@ -200,9 +214,15 @@
 			dragMode = false;
 			digMode = false;
 			initField();
-			loadFakeXML();			
+			//loadFakeXML();			
 			initButtons();
+			getPlants();
 			refreshField();
+		}
+		
+		public function getPlants():void
+		{
+			sendQuery(URL);
 		}
 		
 		public function initField ():void
@@ -230,6 +250,46 @@
 		{
 			var coord:Object = screenCoordToFieldCoord(mouseX, mouseY);
 			Alert.show( coord.x + ";" + coord.y);
+		}
+		
+		public function parseXML():void
+		{
+			plants = new Array();
+			for (var i:int = 0; i < xml.field.elements().length(); i++) 
+			{
+				var type:String = String(xml.field.elements()[i].name());
+				var id:int = int(xml.field.elements()[i].attribute("id"));
+				var x:int = int(xml.field.elements()[i].attribute("x"));
+				var y:int = int(xml.field.elements()[i].attribute("y"));
+				var pr_end:int = int(xml.field.elements()[i].attribute("process_end"));
+								
+				plants[i] = new Plant (type, id, x, y, pr_end);
+			}
+			if (imgArr != null) cleanImgArr();
+			imgArr = new Array();
+		}
+		
+		public function sendQuery(s:String):void
+		{
+			if(stream!=null)
+				stream.removeEventListener(Event.COMPLETE, getQuery);
+			stream = null	
+			trace(s);
+			stream = new URLStream();
+			stream.load(new URLRequest(s));
+			
+			stream.addEventListener(Event.COMPLETE, getQuery);
+		}
+		
+		public function getQuery(e:Event):void
+		{
+			var s:String = String(stream.readUTFBytes(stream.bytesAvailable));
+			s = String(s.substr(s.indexOf("<body>", 0) + 8));
+			var x:int = s.indexOf("</body>");
+			s = s.substr(0, x);
+			xml = new XML(s);
+			parseXML();
+			refreshField();
 		}
 		
 		public function loadFakeXML():void
@@ -263,7 +323,8 @@
 		}
 		
 		public  function refreshField():void
-		{			
+		{	
+			if (plants == null) return;
 			for (var i:int = 0; i < plants.length; i++) 
 			{
 				placePlant(i);
@@ -274,17 +335,6 @@
 		
 		public function placePlant(ind:int):void
 		{		
-			/*
-			var img:com.ImageCached = new com.ImageCached();
-		//	img.source = "../src/img/" + plants[ind].type + "/1.png";
-			img.source = "../src/img/potato/1.png";
-			addChild(img);
-			var coord:Object = fieldCoordToScreenCoord(plants[ind].x, plants[ind].y);
-			img.x = coord.x; 
-			img.y = coord.y;
-			img.addEventListener(Event.RESIZE, coordsCorrect);*/
-			//imgArr[imgArr.length].source = "../src/img/" + plants[ind].type + "/1.png";
-			
 			imgArr[imgArr.length] = new com.ImageCached();
 			
 			imgArr[imgArr.length-1].source = "../src/img/" + plants[ind].type + "/"+plants[ind].state+".png";
@@ -294,8 +344,7 @@
 			imgArr[imgArr.length-1].y = coord.y;
 			imgArr[imgArr.length - 1].addEventListener(Event.RESIZE, coordsCorrect);
 			imgArr[imgArr.length-1].addEventListener(MouseEvent.CLICK, digPlant); 
-			
-			
+					
 		}
 		
 		public function sortImg():void 			
@@ -346,11 +395,9 @@
 			if ((mouseX > stage.stageWidth) || (mouseY > stage.stageHeight)) return;
 			var coord:Object = screenCoordToFieldCoord(mouseX, mouseY); 
 			if (coord.x > 10 || coord.y > 10 || coord.x < 0 || coord.y < 0) return;
-			/////ВРЕМЕННО!
-			if (plants == null) plants= new Array();
-			plants[plants.length] = new Plant(e.currentTarget.name, plants.length-1, coord.x, coord.y, 49000000); 
-			refreshField();	
-				
+			
+			sendQuery(URL + "/?id=seed&plant_type=" + e.currentTarget.name + "&x=" + coord.x + "&y=" + coord.y);
+							
 		}
 		
 		public function screenCoordToFieldCoord (scr_x:int, scr_y:int):Object
