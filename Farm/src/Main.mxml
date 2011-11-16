@@ -1,0 +1,377 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" 
+				layout="absolute" styleName="plain"  
+				creationComplete="initFarm()"
+				horizontalAlign="center">
+	<mx:Script>
+		
+		<![CDATA[
+		import flash.events.StatusEvent;
+		import flash.geom.Point;
+		import flash.media.Sound;
+		import flash.net.LocalConnection;
+		import flash.net.sendToURL;
+		import flash.net.URLRequest;
+		import adobe.utils.ProductManager;
+		import flash.display.Loader;
+		import flash.display.MovieClip;
+		import flash.display.Sprite;
+		import flash.events.Event;
+		import flash.events.FocusEvent;
+		import flash.events.TextEvent;
+		import flash.net.URLRequest;
+		import flash.net.URLRequest;
+		import flash.text.StyleSheet;
+		import flash.text.TextField;
+		import flash.text.TextFormat;
+		import flashx.textLayout.accessibility.TextAccImpl;
+		import flashx.textLayout.formats.Float;
+		import flashx.textLayout.utils.NavigationUtil;
+		import mx.accessibility.LabelAccImpl;
+		import mx.charts.AxisRenderer;
+		import mx.charts.CandlestickChart;
+		import mx.containers.Canvas;
+		import flash.events.TimerEvent;
+		import flash.filters.GradientGlowFilter;
+		import flash.ui.Keyboard;
+		import mx.collections.ArrayCollection;
+		import mx.containers.Canvas;
+		import mx.containers.Panel;
+		import mx.containers.TitleWindow;
+		import mx.controls.Button;
+		import mx.controls.CheckBox;
+		import mx.controls.DataGrid;
+		import mx.controls.Alert;
+		import flash.events.KeyboardEvent;
+		import flash.utils.Timer;
+		import mx.controls.Image;
+		import mx.controls.Label;
+		import mx.controls.SWFLoader;
+		import mx.controls.Text;
+		import mx.controls.TextArea;
+		import mx.controls.TextInput;
+		import mx.core.DragSource;
+		import mx.core.IFlexDisplayObject;
+		import mx.effects.Glow;
+		import mx.effects.Move;
+		import mx.events.CloseEvent;
+		import mx.events.Request;
+		import mx.events.ResizeEvent;
+		import mx.events.StateChangeEvent;
+		import mx.rpc.http.HTTPService;	
+		import mx.events.FlexEvent;
+		import flash.events.MouseEvent;
+		import mx.rpc.events.ResultEvent;
+		import mx.rpc.events.FaultEvent;
+		import flash.display.BitmapData;
+		import flash.geom.Matrix;
+		import mx.managers.PopUpManager;
+		import mx.controls.Label;
+		import flash.net.URLVariables;
+		import spark.components.NavigatorContent;
+		import mx.core.FlexGlobals;
+		import flash.display.Shape; 
+		import flash.display.GradientType; 
+		import flash.geom.Matrix;
+		import com.ImageCached;
+		import XML;
+		import XMLList;
+		import mx.events.DragEvent;
+		import mx.managers.DragManager;
+		import flash.net.URLStream;
+		import Plant;
+		
+
+	public var bgCanv:Canvas;
+	public var clone:com.ImageCached;					//картинка для перетаскивания
+	public var plants:Array;
+	public var potato_button:com.ImageCached;
+	public var sunflower_button:com.ImageCached;
+	public var clover_button:com.ImageCached;
+	public var imgArr:Array;
+	public var digMode:Boolean;			   //индикатор режима сбора урожая
+	public var dragType:String;
+	public var dragMode:Boolean;
+	
+	
+	public const STEP_TIME:int = 10000000;
+	public const X0:int = 122;				//экранные координаты нулевой точки поля
+	public const Y0 :int= 358;
+	public const H_X:int = 57;				//велечины для перевода экранных координат в координаты поля
+	public const H_Y:int = 30;
+	
+	
+		
+		public function initButtons():void
+		{
+			var board:Canvas = new Canvas();
+			addChild(board);
+			
+			board.graphics.lineStyle(1,0xCCCCCC,0.5);
+			board.graphics.beginFill(0xCCCCCC,0.5);
+			board.graphics.drawRect(15,15,130,380);
+			board.graphics.endFill();
+			
+			potato_button = new com.ImageCached();
+			potato_button.source = "../src/img/potato/5.png";
+			board.addChild(potato_button);
+			potato_button.x = 30;
+			potato_button.y = 35;
+			potato_button.name = "potato";
+			potato_button.addEventListener(MouseEvent.MOUSE_DOWN, startMove);
+			
+			clover_button = new com.ImageCached();
+			clover_button.source = "../src/img/clover/5.png";
+			board.addChild(clover_button);
+			clover_button.x = 30;
+			clover_button.y = 115;
+			clover_button.name = "clover";
+			clover_button.addEventListener(MouseEvent.MOUSE_DOWN, startMove);
+			
+			sunflower_button = new com.ImageCached();
+			sunflower_button.source = "../src/img/sunflower/5.png";
+			board.addChild(sunflower_button);
+			sunflower_button.x = 30;
+			sunflower_button.y = 190;
+			sunflower_button.name = "sunflower";
+			sunflower_button.addEventListener(MouseEvent.MOUSE_DOWN, startMove);
+					
+			
+			var step_button: Button = new Button();
+			step_button.label="Сделать ход";
+			step_button.x = 35;
+			step_button.y = 360;
+			board.addChild(step_button);
+			step_button.addEventListener(MouseEvent.CLICK, makeTurn);		
+			
+			var dig_button:Button = new Button();
+			dig_button.label="Собрать";
+			dig_button.x = 45;
+			dig_button.y = 330;
+			board.addChild(dig_button);
+			dig_button.addEventListener(MouseEvent.CLICK, startDig)
+			
+		}
+		
+		public function startDig(e:MouseEvent):void
+		{
+			digMode = true;
+		}
+		
+		public function digPlant(e:MouseEvent):void
+		{
+			if (!digMode) return;
+			digMode = false;
+			var coord:Object = screenCoordToFieldCoord(mouseX, mouseY);
+			var ind:int = findPlant(coord.x, coord.y);
+			if (ind == -1) return;
+			if (plants[ind].state != 5) return;
+			imgArr[ind].visible = false;
+			imgArr.splice(ind, 1);
+			plants.splice(ind, 1);
+			
+			
+		}
+		public function findPlant(x:int, y:int):int
+		{
+			for (var i:int = 0; i < plants.length; i++) 
+			{
+				if (x == plants[i].x && y == plants[i].y) return i;
+			}	
+			return -1;
+		}
+		
+		public function makeTurn(e:MouseEvent):void
+		{
+			for each (var pole : Plant in plants)
+			{
+				pole.process_end -= STEP_TIME;
+				pole.calcPlantState(pole.process_end);
+			}
+			
+			if (imgArr != null) cleanImgArr();
+			imgArr = new Array();
+			refreshField();
+		}		
+		
+		
+		public function initFarm ():void
+		{						
+			dragMode = false;
+			digMode = false;
+			initField();
+			loadFakeXML();			
+			initButtons();
+			refreshField();
+		}
+		
+		public function initField ():void
+		{
+			bgCanv = new Canvas();
+			bgCanv.width = 800;
+			bgCanv.height = 600;
+			addChild(bgCanv);
+			var bg:com.ImageCached = new com.ImageCached();
+			bg.source = "../src/img/BG.jpg";			
+			bgCanv.addChild(bg);	
+			bgCanv.parent.addEventListener (Event.RESIZE, resizeStage);
+			
+			//stage.addEventListener (Event.RESIZE, resizeStage);
+			//bg.addEventListener(MouseEvent.CLICK, alertMes)
+			
+		}
+		public function resizeStage(e:Event):void 
+		{
+			bgCanv.width = stage.width;
+			bgCanv.height = stage.height;
+		}
+		
+		public function alertMes(e:MouseEvent):void
+		{
+			var coord:Object = screenCoordToFieldCoord(mouseX, mouseY);
+			Alert.show( coord.x + ";" + coord.y);
+		}
+		
+		public function loadFakeXML():void
+		{
+			var str_xml:String = "<country>	<field zero_x='0' zero_y='0' size_x='11' size_y='11'>		<clover id='2777' x='0' y='0' process_end='3550000' /> 		<sunflower id='2778' x='0' y='5' process_end='13454000' /> 		<potato id='2779' x='0' y='10' process_end='12560000' /> 		<clover id='2780' x='5' y='0' process_end='10751000' /> 		<sunflower id='2781' x='5' y='5' process_end='40455000' /> 		<potato id='2782' x='5' y='10' process_end='37761000' />	</field> </country>";
+			var xml:XML = new XML(str_xml);
+			plants = new Array();
+			for (var i:int = 0; i < xml.field.elements().length(); i++) 
+			{
+				var type:String = String(xml.field.elements()[i].name());
+				var id:int = int(xml.field.elements()[i].attribute("id"));
+				var x:int = int(xml.field.elements()[i].attribute("x"));
+				var y:int = int(xml.field.elements()[i].attribute("y"));
+				var pr_end:int = int(xml.field.elements()[i].attribute("process_end"));
+								
+				plants[i] = new Plant (type, id, x, y, pr_end);
+			}
+			if (imgArr != null) cleanImgArr();
+			imgArr = new Array();
+		}
+		
+		public function cleanImgArr():void
+		{
+			for (var i:int = 0; i < imgArr.length; i++) 
+			{
+				imgArr[i].visible = false;
+				imgArr[i].removeEventListener(Event.RESIZE, coordsCorrect);
+				imgArr[i].removeEventListener(MouseEvent.CLICK, digPlant);
+			}
+			
+		}
+		
+		public  function refreshField():void
+		{			
+			for (var i:int = 0; i < plants.length; i++) 
+			{
+				placePlant(i);
+			}
+			sortImg();
+		}
+		
+		
+		public function placePlant(ind:int):void
+		{		
+			/*
+			var img:com.ImageCached = new com.ImageCached();
+		//	img.source = "../src/img/" + plants[ind].type + "/1.png";
+			img.source = "../src/img/potato/1.png";
+			addChild(img);
+			var coord:Object = fieldCoordToScreenCoord(plants[ind].x, plants[ind].y);
+			img.x = coord.x; 
+			img.y = coord.y;
+			img.addEventListener(Event.RESIZE, coordsCorrect);*/
+			//imgArr[imgArr.length].source = "../src/img/" + plants[ind].type + "/1.png";
+			
+			imgArr[imgArr.length] = new com.ImageCached();
+			
+			imgArr[imgArr.length-1].source = "../src/img/" + plants[ind].type + "/"+plants[ind].state+".png";
+			bgCanv.addChild(imgArr[imgArr.length-1]);
+			var coord:Object = fieldCoordToScreenCoord(plants[ind].x, plants[ind].y);
+			imgArr[imgArr.length-1].x = coord.x; 
+			imgArr[imgArr.length-1].y = coord.y;
+			imgArr[imgArr.length - 1].addEventListener(Event.RESIZE, coordsCorrect);
+			imgArr[imgArr.length-1].addEventListener(MouseEvent.CLICK, digPlant); 
+			
+			
+		}
+		
+		public function sortImg():void 			
+		{//сортировка картинок по уровням для правильного наложения картинок
+			for (var i:int = -10; i < 11; i++)
+			{
+				for (var j:int = 0; j < plants.length; j++)
+					if (plants[j].y - plants[j].x == i)
+				bgCanv.setChildIndex(imgArr[j], bgCanv.numChildren - 1);
+			}
+		}
+		
+		public function coordsCorrect(e:Event):void
+		{
+			var img:com.ImageCached = com.ImageCached(e.currentTarget);
+			img.y += 100 - img.height;
+		}
+		
+		public function startMove(e:MouseEvent):void 
+		{	
+			if (digMode) return;
+			dragMode = true;
+			clone = new com.ImageCached();		    
+			clone.source = "../src/img/" + e.currentTarget.name + "/1.png";	
+			clone.name = e.currentTarget.name;
+			addChild(clone);
+			clone.addEventListener(Event.RESIZE, correctPosition);
+			clone.startDrag()
+			clone.addEventListener(MouseEvent.MOUSE_UP, stopMove);
+		}
+		
+		public function correctPosition(e:Event):void
+		{
+			clone.x = mouseX - clone.width/2 ;
+			clone.y = mouseY - clone.height / 2;
+			clone.removeEventListener(Event.RESIZE, correctPosition);
+		}
+		
+ 
+		public function stopMove(e:MouseEvent):void 
+		{
+			dragMode = false;
+			clone.stopDrag();
+			clone.removeEventListener(MouseEvent.MOUSE_UP, stopMove);
+			clone.visible = false;
+			clone = null;
+			
+			if ((mouseX > stage.stageWidth) || (mouseY > stage.stageHeight)) return;
+			var coord:Object = screenCoordToFieldCoord(mouseX, mouseY); 
+			if (coord.x > 10 || coord.y > 10 || coord.x < 0 || coord.y < 0) return;
+			/////ВРЕМЕННО!
+			if (plants == null) plants= new Array();
+			plants[plants.length] = new Plant(e.currentTarget.name, plants.length-1, coord.x, coord.y, 49000000); 
+			refreshField();	
+				
+		}
+		
+		public function screenCoordToFieldCoord (scr_x:int, scr_y:int):Object
+		{
+			var fieldCoord:Object = new Object();		
+			scr_x = scr_x - X0 + bgCanv.horizontalScrollPosition; 
+			scr_y = scr_y - Y0 - 100 + bgCanv.verticalScrollPosition;
+			
+			fieldCoord.x = Math.round(((scr_x * 0.46 - scr_y * 0.887))/51)-1;
+			fieldCoord.y = Math.round(((scr_x * 0.46 + scr_y * 0.887)) / 51); 			
+			return fieldCoord;
+		}
+		public function fieldCoordToScreenCoord (fld_x:int, fld_y:int):Object
+		{
+			var screenCoord:Object = new Object();
+			screenCoord.x = X0 + fld_x * H_X + fld_y * H_X;
+			screenCoord.y = Y0 - fld_x * H_Y + fld_y * H_Y;
+			return screenCoord;
+		}
+		
+		
+		]]>
+	</mx:Script>
+</mx:Application>
