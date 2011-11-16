@@ -108,6 +108,7 @@
 		public function initButtons():void
 		{
 			var board:Canvas = new Canvas();
+			
 			addChild(board);
 			
 			board.graphics.lineStyle(1,0xCCCCCC,0.5);
@@ -156,9 +157,9 @@
 			
 			statLabel = new Label();
 			statLabel.text = "Связь с сервером...";
-			statLabel.x = 45;
+			statLabel.x = 20;
 			statLabel.y = 380;
-			//statLabel.visible = false;
+			statLabel.visible = false;
 			board.addChild(statLabel);
 			
 			
@@ -168,11 +169,16 @@
 		public function startDig(e:MouseEvent):void
 		{
 			digMode = true;
+			
+			statLabel.text = "Выберите цветок";
+			statLabel.visible = true;
 		}
 		
 		public function digPlant(e:MouseEvent):void
 		{
 			if (!digMode) return;
+			
+			statLabel.visible =false;
 			digMode = false;
 			var coord:Object = screenCoordToFieldCoord(mouseX, mouseY);
 			sendQuery(URL + "/?id=grab&x=" + coord.x + "&y=" + coord.y);
@@ -204,6 +210,8 @@
 			
 			if (imgArr != null) cleanImgArr();
 			imgArr = new Array();*/
+			statLabel.text = "Связь с сервером";
+			statLabel.visible = true;
 			sendQuery(URL + "/?id=make_turn");
 			//refreshField();
 		}		
@@ -273,8 +281,6 @@
 		{
 			if(stream!=null)
 				stream.removeEventListener(Event.COMPLETE, getQuery);
-			stream = null	
-			trace(s);
 			stream = new URLStream();
 			stream.load(new URLRequest(s));
 			
@@ -290,10 +296,11 @@
 			xml = new XML(s);
 			parseXML();
 			refreshField();
+			statLabel.visible = false;
 		}
 		
 		public function loadFakeXML():void
-		{
+		{//для тестирования
 			var str_xml:String = "<country>	<field zero_x='0' zero_y='0' size_x='11' size_y='11'>		<clover id='2777' x='0' y='0' process_end='3550000' /> 		<sunflower id='2778' x='0' y='5' process_end='13454000' /> 		<potato id='2779' x='0' y='10' process_end='12560000' /> 		<clover id='2780' x='5' y='0' process_end='10751000' /> 		<sunflower id='2781' x='5' y='5' process_end='40455000' /> 		<potato id='2782' x='5' y='10' process_end='37761000' />	</field> </country>";
 			var xml:XML = new XML(str_xml);
 			plants = new Array();
@@ -367,6 +374,8 @@
 		{	
 			if (digMode) return;
 			dragMode = true;
+			statLabel.text = "Разместите цветок";
+			statLabel.visible = true;;
 			clone = new com.ImageCached();		    
 			clone.source = "../src/img/" + e.currentTarget.name + "/1.png";	
 			clone.name = e.currentTarget.name;
@@ -387,6 +396,7 @@
 		public function stopMove(e:MouseEvent):void 
 		{
 			dragMode = false;
+			statLabel.visible = false;
 			clone.stopDrag();
 			clone.removeEventListener(MouseEvent.MOUSE_UP, stopMove);
 			clone.visible = false;
