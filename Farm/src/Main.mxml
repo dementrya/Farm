@@ -195,7 +195,7 @@
 		{
 			for (var i:int = 0; i < plants.length; i++) 
 			{
-				if (x == plants[i].x && y == plants[i].y) return i;
+				if (x == plants[i].getX() && y == plants[i].getY()) return i;
 			}	
 			return -1;
 		}
@@ -344,9 +344,9 @@
 		{		
 			imgArr[imgArr.length] = new com.ImageCached();
 			
-			imgArr[imgArr.length-1].source = "../src/img/" + plants[ind].type + "/"+plants[ind].state+".png";
+			imgArr[imgArr.length-1].source = "../src/img/" + plants[ind].getType() + "/"+plants[ind].getState()+".png";
 			bgCanv.addChild(imgArr[imgArr.length-1]);
-			var coord:Object = fieldCoordToScreenCoord(plants[ind].x, plants[ind].y);
+			var coord:Object = fieldCoordToScreenCoord(plants[ind].getX(), plants[ind].getY());
 			imgArr[imgArr.length-1].x = coord.x; 
 			imgArr[imgArr.length-1].y = coord.y;
 			imgArr[imgArr.length - 1].addEventListener(Event.RESIZE, coordsCorrect);
@@ -359,7 +359,7 @@
 			for (var i:int = -10; i < 11; i++)
 			{
 				for (var j:int = 0; j < plants.length; j++)
-					if (plants[j].y - plants[j].x == i)
+					if (plants[j].getY() - plants[j].getX() == i)
 				bgCanv.setChildIndex(imgArr[j], bgCanv.numChildren - 1);
 			}
 		}
